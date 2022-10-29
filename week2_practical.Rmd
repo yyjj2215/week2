@@ -1,0 +1,287 @@
+---
+title: "week2_practice"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+----
+week 2 code
+----
+1. basic commands
+```{r}
+#列出所有对象
+ls()
+#删除指定对象
+rm()
+```
+2. functions
+```{r}
+X<-function(data,argument1, argument2,argument3)
+```
+
+3. basic plotting
+```{r}
+data1<-c(1:100)
+data2<-c(101:200)
+plot(data1,data2,col='green')
+```
+```{r}
+data3<-rnorm(200, mean=120,sd=68)
+data4<-rnorm(200,mean = 135, sd=30)
+plot(data3,data4,col="green")
+```
+4. data structures
+```{r}
+df<-data.frame(data1,data2)
+plot(df,col="red")
+```
+
+```{r}
+# see only selection of large data
+library(tidyverse)
+df%>%
+  head(10)
+df%>%
+  tail(10)
+```
+5. elements of a data frame
+```{r}
+#  data.frame[row,column]  先行后列
+df[1:10,1]
+df[5:15,]
+df[c(2,3,5,77,99,100),2]  #就是单纯指查看哪个数据
+df[,1]
+```
+```{r}
+# rename
+library(dplyr)
+df<-df%>%
+  dplyr::rename(col1=data1,col2=data2)   #col1和col2是自定义的名字，放在前边
+```
+```{r}
+df%>%
+  dplyr::select(col1)    #用select选择指定列
+```
+```{r}
+df$col1  #用$来选择指定列
+```
+```{r}
+df[["col1"]]   #用两个【【】】来选择指定列
+```
+6. old school cleaning
+```{r}
+LondonDataOSK<-read.csv("LondonData.csv", header = TRUE, sep=",", encoding = "latin1")
+```
+```{r}
+#用here包来读文件
+library(here)
+LondonDataOSK1<-read.csv(here::here("LondonData.csv"), header = TRUE,sep = ",", encoding = "latin1")
+```
+7. new school cleaning
+```{r}
+LondonData <- read_csv("https://data.london.gov.uk/download/ward-profiles-and-atlas/772d2d64-e8c6-46cb-86f9-e52b4c7851bc/ward-profiles-excel-version.csv",
+                       locale = locale(encoding = "latin1"),
+                       na = "n/a")
+```
+# na这个具bb体指什么？作用是啥
+8. Examining your new data
+```{r}
+class(LondonData)
+class(LondonDataOSK)
+```
+# read_csv和read.csv读出来的数据格式不一样，感觉好像没有太大的区别
+```{r}
+datatypelist<-LondonData%>%
+  summarise_all(class)%>%
+  pivot_longer(everything(),
+               names_to = "All_variables",
+               values_to = "Variables_class")
+datatypelist
+```
+```{r}
+LondonData <- read_csv("https://data.london.gov.uk/download/ward-profiles-and-atlas/772d2d64-e8c6-46cb-86f9-e52b4c7851bc/ward-profiles-excel-version.csv", locale = locale(encoding = "latin1"))
+datatypelist<-LondonData%>%
+  summarise_all(class)%>%
+  pivot_longer(everything(),
+               names_to = "All_variables",
+               values_to = "Variables_class")
+datatypelist
+
+```
+# 如果不写读取文件时不写n/a会导致整列数据都变成character而不是numeric
+```{r}
+LondonData<-edit(LondonData)
+```
+```{r}
+summary(df)
+```
+```{r}
+LondonData%>%
+  colnames()%>%
+  head()
+```
+9. Data manipulation in R
+# select rows
+```{r}
+#第一种写法
+LondonBoroughs<-LondonData[626:658,]
+#第二种写法
+LondonBoroughs<-LondonData%>%
+  slice(626:658)
+```
+```{r}
+Femalelifeexp<-LondonData%>%
+  filter(`Female life expectancy -2009-13`>90)
+```
+```{r}
+LondonBoroughs<-LondonData%>%
+  filter(str_detect(`New code`, "^E09"))
+```
+```{r}
+LondonBoroughs$`Ward name`
+```
+```{r}
+LondonBoroughs%>%
+  dplyr::select(`Ward name`)%>%
+  print()
+```
+#去重用distinct()
+```{r}
+LondonBoroughs<-LondonBoroughs%>%
+  distinct()
+```
+# select columns
+```{r}
+LondonBoroughs_manualcols<-LondonBoroughs[,c(1,19,20,21)]
+LondonBoroughs_dplyrcols<-LondonBoroughs%>%
+  dplyr::select(c(1,19,20,21))
+```
+```{r}
+LondonBoroughs_contains<-LondonBoroughs %>% 
+  dplyr::select(contains("expectancy"), 
+         contains("obese - 2011/12 to 2013/14"),
+         contains("Ward name"))
+```
+# rename columns
+```{r}
+library(janitor)
+LondonBoroughs<-LondonBoroughs%>%
+  dplyr::rename(Borough=`Ward name`)%>%
+  clean_names()    
+```
+#  clean_name是什么意思
+#现在暂时别运行
+LondonBoroughs <- LondonBoroughs %>%
+  #here the ., means all data
+  clean_names(., case="big_camel")运行
+# More dplyr verbs
+```{r}
+Life_expectancy <- LondonBoroughs %>% 
+  #new column with average of male and female life expectancy
+  mutate(averagelifeexpectancy= (female_life_expectancy_2009_13 +
+                                    male_life_expectancy_2009_13)/2)%>%
+  #new column with normalised life expectancy
+  mutate(normalisedlifeepectancy= averagelifeexpectancy /
+           mean(averagelifeexpectancy))%>%
+  #select only columns we want
+  dplyr::select(new_code,
+         borough,
+         averagelifeexpectancy, 
+         normalisedlifeepectancy)%>%
+  #arrange in descending order
+  #ascending is the default and would be
+  #arrange(normalisedlifeepectancy)
+  arrange(desc(normalisedlifeepectancy))
+```
+```{r}
+slice_head(Life_expectancy,n=5)
+slice_tail(Life_expectancy,n=5)
+```
+# levelling up with dplyr
+```{r}
+Life_expectancy2<-Life_expectancy%>%
+  mutate(UKcompare=case_when(averagelifeexpectancy>81.16~"above UK average",TRUE ~ "below UK average"))
+```
+#TRUE 代表什么
+```{r}
+Life_expectancy2_group<-Life_expectancy2%>%
+  mutate(UKdiff=averagelifeexpectancy-81.16)%>%
+  group_by(UKcompare)%>%
+  summarise(range=max(UKdiff)-min(UKdiff),count=n(),Average=mean(UKdiff))
+Life_expectancy2_group
+```
+```{r}
+Life_expectancy3 <- Life_expectancy %>%
+  mutate(UKdiff = averagelifeexpectancy-81.16)%>%
+  mutate(across(where(is.numeric), round, 3))%>%
+  mutate(across(UKdiff, round, 0))%>%
+  mutate(UKcompare = case_when(averagelifeexpectancy >= 81 ~ 
+                                 str_c("equal or above UK average by",
+                                       UKdiff, 
+                                       "years", 
+                                       sep=" "), 
+                               TRUE ~ str_c("below UK average by",
+                                            UKdiff,
+                                            "years",
+                                            sep=" ")))%>%
+  group_by(UKcompare)%>%
+  summarise(count=n())
+
+Life_expectancy3
+```
+# 这一步的第三行 round 3没怎么看懂作用是什么
+```{r}
+Life_expectancy4 <- Life_expectancy %>%
+  mutate(UKdiff = averagelifeexpectancy-81.16)%>%
+  mutate(across(is.numeric, round, 3))%>%
+  mutate(across(UKdiff, round, 0))
+```
+10. plotting
+```{r}
+plot(LondonBoroughs$male_life_expectancy_2009_13,
+     LondonBoroughs$percent_children_in_reception_year_who_are_obese_2011_12_to_2013_14)
+```
+```{r}
+library(plotly)
+plot_ly(LondonBoroughs, 
+        #data for x axis
+        x = ~male_life_expectancy_2009_13, 
+        #data for y axis
+        y = ~percent_children_in_reception_year_who_are_obese_2011_12_to_2013_14, 
+        #attribute to display when hovering 
+        text = ~borough, 
+        type = "scatter", 
+        mode = "markers")
+```
+# spatial data in R
+# 需要安装的包
+install.packages("maptools")
+install.packages(c("classInt", "tmap"))
+install.packages(c("RColorBrewer", "sp", "rgeos", 
+                   "tmaptools", "sf", "downloader", "rgdal", 
+                   "geojsonio"))
+                   
+
